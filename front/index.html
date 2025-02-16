@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logement Packages</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        header {
+            background-color: #4CAF50;
+            padding: 20px;
+            color: white;
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .logement-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            padding: 20px;
+            transition: transform 0.3s, box-shadow 0.3s;
+            text-align: center;
+        }
+
+        .logement-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .logement-card h3 {
+            margin: 10px 0;
+            color: #4CAF50;
+            font-size: 1.8em;
+        }
+
+        .logement-card p {
+            font-size: 1em;
+            margin: 10px 0;
+            color: #555;
+        }
+
+        .logement-card .price {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #FF5733;
+        }
+
+        .logement-card .btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+
+        .logement-card .btn:hover {
+            background-color: #45a049;
+        }
+
+        .form-container {
+            margin: 20px;
+            text-align: center;
+        }
+
+        .form-container input, .form-container textarea {
+            padding: 10px;
+            margin: 5px;
+            width: 300px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        .form-container button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .form-container button:hover {
+            background-color: #45a049;
+        }
+
+        .error-message {
+            color: red;
+            font-size: 1.2em;
+            text-align: center;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Logement Management</h1>
+    </header>
+    
+    <div class="container" id="logementList">
+        <!-- List of logement cards will be displayed here -->
+    </div>
+
+    <!-- Add/Edit Logement Form -->
+    <div class="form-container" id="logementFormContainer">
+        <h2>Add/Update Logement</h2>
+        <form id="logementForm">
+            <input type="text" id="type" placeholder="Type" required><br>
+            <input type="text" id="adresse" placeholder="Adresse" required><br>
+            <input type="text" id="delegation" placeholder="Delegation" required><br>
+            <input type="text" id="gouvernorat" placeholder="Gouvernorat" required><br>
+            <textarea id="description" placeholder="Description" required></textarea><br>
+            <input type="number" id="prix" placeholder="Prix" required><br>
+            <button type="submit">Add Logement</button>
+        </form>
+    </div>
+
+    <script>
+        async function fetchLogements() {
+            const response = await fetch('http://localhost:7777/LogementRendezVous_Etudiant_war_exploded/api/logement/getAll');
+            const logements = await response.json();
+            const containerElement = document.getElementById('logementList');
+            containerElement.innerHTML = '';
+
+            logements.forEach(logement => {
+                const cardElement = document.createElement('div');
+                cardElement.classList.add('logement-card');
+                cardElement.innerHTML = `
+                    <h3>${logement.type}</h3>
+                    <p>${logement.adresse}, ${logement.delegation}, ${logement.gouvernorat}</p>
+                    <p>${logement.description}</p>
+                    <p class="price">${logement.prix} TND</p>
+                    <button onclick="deleteLogement(${logement.reference})">Delete</button>
+                    <button onclick="editLogement(${logement.reference})">Edit</button>
+                `;
+                containerElement.appendChild(cardElement);
+            });
+        }
+
+        async function deleteLogement(reference) {
+            const response = await fetch(`http://localhost:7777/LogementRendezVous_Etudiant_war_exploded/api/logement/delete/${reference}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                alert('Logement deleted successfully!');
+                fetchLogements();
+            } else {
+                alert('Failed to delete logement');
+            }
+        }
+
+        function editLogement(reference) {
+            // Fetch logement data for editing
+            fetch(`http://localhost:7777/LogementRendezVous_Etudiant_war_exploded/api/logement/get/${reference}`)
+                .then(response => response.json())
+                .then(logement => {
+                    document.getElementById('type').value = logement.type;
+                    document.getElementById('adresse').value = logement.adresse;
+                    document.getElementById('delegation').value = logement.delegation;
+                    document.getElementById('gouvernorat').value = logement.gouvernorat;
+                    document.getElementById('description').value = logement.description;
+                    document.getElementById('prix').value = logement.prix;
+                    document.getElementById('logementForm').onsubmit = function(e) {
+                        e.preventDefault();
+                        updateLogement(reference);
+                    };
+                });
+        }
+
+        async function updateLogement(reference) {
+            const updatedLogement = {
+                reference: reference,
+                type: document.getElementById('type').value,
+                adresse: document.getElementById('adresse').value,
+                delegation: document.getElementById('delegation').value,
+                gouvernorat: document.getElementById('gouvernorat').value,
+                description: document.getElementById('description').value,
+                prix: document.getElementById('prix').value
+            };
+
+            const response = await fetch(`http://localhost:7777/LogementRendezVous_Etudiant_war_exploded/api/logement/update/${reference}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedLogement)
+            });
+
+            if (response.ok) {
+                alert('Logement updated successfully!');
+                fetchLogements();
+            } else {
+                alert('Failed to update logement');
+            }
+        }
+
+        async function addLogement(e) {
+            e.preventDefault();
+
+            const newLogement = {
+                type: document.getElementById('type').value,
+                adresse: document.getElementById('adresse').value,
+                delegation: document.getElementById('delegation').value,
+                gouvernorat: document.getElementById('gouvernorat').value,
+                description: document.getElementById('description').value,
+                prix: document.getElementById('prix').value
+            };
+
+            const response = await fetch('http://localhost:7777/LogementRendezVous_Etudiant_war_exploded/api/logement/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newLogement)
+            });
+
+            if (response.ok) {
+                alert('Logement added successfully!');
+                fetchLogements();
+            } else {
+                alert('Failed to add logement');
+            }
+        }
+
+        document.getElementById('logementForm').onsubmit = addLogement;
+
+        // Initial fetch
+        fetchLogements();
+    </script>
+</body>
+</html>

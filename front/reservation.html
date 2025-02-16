@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservation System</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #007BFF;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+        }
+        #reservation-menu {
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            width: 80%;
+            max-width: 800px;
+        }
+        #reservation-menu ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            justify-content: space-around;
+        }
+        #reservation-menu ul li {
+            margin: 10px;
+        }
+        #reservation-menu ul li a {
+            text-decoration: none;
+            font-size: 16px;
+            color: #007BFF;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        #reservation-menu ul li a:hover {
+            color: #0056b3;
+        }
+        .section-container {
+            margin-top: 20px;
+            width: 80%;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+        .form-container, .table-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-container h2, .table-container h2 {
+            margin-bottom: 15px;
+            font-size: 24px;
+            color: #333;
+        }
+        .form-container label {
+            font-size: 16px;
+            color: #555;
+        }
+        .form-container input, .form-container button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+        }
+        .form-container input:focus, .form-container button:focus {
+            border-color: #007BFF;
+        }
+        .form-container button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .form-container button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: 500;
+        }
+        .delete-btn, .edit-btn {
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .delete-btn:hover, .edit-btn:hover {
+            background-color: #d32f2f;
+        }
+        footer {
+            background-color: #007BFF;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            position: fixed;
+            width: 100%;
+            bottom: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Section -->
+    <header>
+        <h1>Reservation System</h1>
+    </header>
+
+    <!-- Main Menu Section -->
+    <div id="reservation-menu">
+        <ul>
+            <li><a href="#add-reservation" onclick="showAddReservationForm()">Add Reservation</a></li>
+            <li><a href="#view-reservations" onclick="showReservationsList()">View Reservations</a></li>
+        </ul>
+    </div>
+
+    <!-- Add Reservation Form Section -->
+    <div id="add-reservation-form" class="section-container" style="display:none;">
+        <div class="form-container">
+            <h2>Add Reservation</h2>
+            <form id="reservationForm" onsubmit="submitReservation(event)">
+                <label for="logement-reference">Logement Reference:</label>
+                <input type="number" id="logement-reference" required><br>
+
+                <label for="reservation-date">Date:</label>
+                <input type="date" id="reservation-date" required><br>
+
+                <label for="reservation-time">Time:</label>
+                <input type="time" id="reservation-time" required><br>
+
+                <label for="phone-number">Phone Number:</label>
+                <input type="text" id="phone-number" required><br>
+
+                <button type="submit">Submit Reservation</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Reservations Section -->
+    <div id="reservations-list" class="section-container" style="display:none;">
+        <div class="table-container">
+            <h2>Reservations List</h2>
+            <table id="reservations-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Logement</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Phone</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Footer Section -->
+    <footer>
+        <p>&copy; 2025 Reservation System</p>
+    </footer>
+
+    <!-- JavaScript for Reservation Management -->
+    <script>
+        let editReservationId = null;
+
+        function showAddReservationForm() {
+            document.getElementById('add-reservation-form').style.display = 'block';
+            document.getElementById('reservations-list').style.display = 'none';
+            resetForm();
+        }
+
+        function showReservationsList() {
+            document.getElementById('add-reservation-form').style.display = 'none';
+            document.getElementById('reservations-list').style.display = 'block';
+            fetchReservations();
+        }
+
+        function fetchReservations() {
+            fetch('http://localhost:7777/LogementRendezVous_Etudiant_war_exploded/api/rendezvous')
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.getElementById('reservations-table').getElementsByTagName('tbody')[0];
+                    tableBody.innerHTML = ''; // Clear existing rows
+                    data.forEach(reservation => {
+                        let row = tableBody.insertRow();
+                        row.insertCell(0).textContent = reservation.id;
+                        row.insertCell(1).textContent = reservation.logement.reference;
+                        row.insertCell(2).textContent = reservation.date;
+                        row.insertCell(3).textContent = reservation.heure;
+                        row.insertCell(4).textContent = reservation.numTel;
+                        let actionsCell = row.insertCell(5);
+                        actionsCell.innerHTML = `  
+                            <button class="edit-btn" onclick="editReservation(${reservation.id})">Edit</button>  
+                            <button class="delete-btn" onclick="deleteReservation(${reservation.id})">Delete</button>  
+                        `;
+                    });
+                });
+        }
+
+        function submitReservation(event) {
+            event.preventDefault();
+
+            const reference = document.getElementById('logement-reference').value;
+            const date = document.getElementById('reservation-date').value;
+            const time = document.getElementById('reservation-time').value;
+            const phone = document.getElementById('phone-number').value;
+
+            const reservationData = {
+                logement: { reference },
+                date,
+                heure: time,
+                numTel: phone
+            };
+
+            if (editReservationId) {
+                fetch(`http://localhost:7777/LogementRendezVous_Etudiant_war_exploded/api/rendezvous/${editReservationId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(reservationData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert('Reservation updated successfully!');
+                    editReservationId = null;
+                    showReservationsList();
+                })
+                .catch(error => alert('Error: ' + error));
+            } else {
+                fetch('http://localhost:7777/LogementRendezVous_Etudiant_war_exploded/api/rendezvous', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(reservationData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert('Reservation added successfully!');
+                    showReservationsList();
+                })
+                .catch(error => alert('Error: ' + error));
+            }
+        }
+
+        function deleteReservation(id) {
+            fetch(`http://localhost:7777/LogementRendezVous_Etudiant_war_exploded/api/rendezvous/${id}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Reservation deleted');
+                    fetchReservations();
+                }
+            });
+        }
+
+        function editReservation(id) {
+            editReservationId = id;
+            fetch(`http://localhost:7777/LogementRendezVous_Etudiant_war_exploded/api/rendezvous/${id}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(reservation => {
+                    resetForm();
+                    document.getElementById('logement-reference').value = reservation.logement.reference;
+                    document.getElementById('reservation-date').value = reservation.date;
+                    document.getElementById('reservation-time').value = reservation.heure;
+                    document.getElementById('phone-number').value = reservation.numTel;
+                    showAddReservationForm();
+                })
+                .catch(error => {
+                    console.error('Error fetching reservation for editing:', error);
+                    alert('Error fetching reservation for editing: ' + error.message);
+                });
+        }
+
+        function resetForm() {
+            document.getElementById('reservationForm').reset();
+        }
+    </script>
+</body>
+</html>
